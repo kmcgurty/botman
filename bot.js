@@ -1,6 +1,5 @@
 //todo: prevent messages inside #qr-bot-search
 
-
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const auth = require('./auth.json');
@@ -47,17 +46,17 @@ client.on('guildMemberAdd', member => {
 });
 
 //test code, disable when live into guildMemberAdd above when live
-client.on('message', message => {
-    if (message.content == ".fakejoin") {
-        currentNewUsers++;
-        Timeout.clear("newUserTimeout");
-        Timeout.set("newUserTimeout", resetCounter, newUserTime);
+// client.on('message', message => {
+//     if (message.content == ".fakejoin") {
+//         currentNewUsers++;
+//         Timeout.clear("newUserTimeout");
+//         Timeout.set("newUserTimeout", resetCounter, newUserTime);
 
-        if (currentNewUsers >= newUserLimit) {
-            detectedLeak();
-        }
-    }
-});
+//         if (currentNewUsers >= newUserLimit) {
+//             detectedLeak();
+//         }
+//     }
+// });
 
 function initiateUser(member) {
     member.setRoles([roles.after10mins]).catch(console.error);
