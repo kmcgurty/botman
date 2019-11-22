@@ -2,28 +2,17 @@
 
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const auth = require('./auth.json');
 const Timeout = require('smart-timeout');
-
-let roles = {
-    "firstjoined": "646165492788232213", //ID of role to first assign to users
-    "after10mins": "646165580210110487" //ID of role to change after the alloted time
-}
-
-let channels = {}
-
-let probationPeriod = 600000; // time until users get access to the rest of the server 10 mins
-let newUserLimit = 30;
-let newUserTime = 600000; //ms
-
-let message = "Below is the link to the server, feel free to share it with your friends.\nDO NOT POST THIS PUBLICLY, ESPECIALLY ON REDDIT. SHARE ONLY THROUGH PRIVATE MESSAGES.\n\n";
-
-//----------------------------------- END CONFIG -----------------------------------
+const logger = require('./logger.js');
+const auth = require('./auth.json');
+const config = require('./config.json');
 
 let currentNewUsers = 0;
+let usersOnProbation = [];
+let channels = {}
 
 client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
+    logger.log(`Logged in as ${client.user.tag}!`);
 
     channels = {
         "welcome": client.channels.find(channel => channel.name === "welcome"),
@@ -33,59 +22,111 @@ client.on('ready', () => {
 });
 
 client.on('guildMemberAdd', member => {
-    member.setRoles([roles.firstjoined]).catch(console.error);
-    Timeout.set(initiateUser, probationPeriod, member);
+    logger.log(`Setting initial role for ${member.displayName}`)
+
+    setProbation(member);
+
+    try {
+        member.setRoles([config.roles.first])
+        logger.log(`Successfully set the initial role for ${member.displayName}`)
+    } catch (e) {
+        logger.error(e);
+    }
 
     currentNewUsers++;
-    Timeout.clear("newUserTimeout");
-    Timeout.set("newUserTimeout", resetCounter, newUserTime);
+    Timeout.clear("inviteLeakTimeout");
+    Timeout.set("inviteLeakTimeout", resetCounter, config.inviteLeakTime);
 
-    if (currentNewUsers >= newUserLimit) {
+    if (currentNewUsers >= config.maxNewUsers) {
         detectedLeak();
     }
 });
 
-//test code, disable when live into guildMemberAdd above when live
-// client.on('message', message => {
-//     if (message.content == ".fakejoin") {
-//         currentNewUsers++;
-//         Timeout.clear("newUserTimeout");
-//         Timeout.set("newUserTimeout", resetCounter, newUserTime);
+async function removeProbation(member) {
+    try {
+        logger.log(`Removing probation role for '${member.displayName}'...`);
 
-//         if (currentNewUsers >= newUserLimit) {
-//             detectedLeak();
-//         }
-//     }
-// });
+        await member.setRoles([config.roles.second]);
 
-function initiateUser(member) {
-    member.setRoles([roles.after10mins]).catch(console.error);
-    member.createDM()
-        .then(function(dm) {
-            dm.send("Congrats! You've been granted access to the rest of the qreeShop server. 😊 Enjoy your stay!")
+        logger.log("Role change success!");
+        logger.log(`Attempting to send DM to '${member.displayName}'...`);
+
+        let dm = await member.createDM()
+        await dm.send("Congrats! You've been granted access to the rest of the qreeShop server. 😊 Enjoy your stay!")
+
+        logger.log("DM success!");
+    } catch (e) {
+        if (e.code == 50007) {
+            logger.log("User does not accept DMs. Skipping.")
+        } else {
+            logger.error(e);
+        }
+    }
+}
+
+async function detectedLeak() {
+    resetCounter()
+    Timeout.clear("inviteLeakTimeout");
+
+    try {
+        let invites = await channels.welcome.fetchInvites();
+        await invites.deleteAll();
+
+        let messages = await channels.linkshare.fetchMessages(channels.linkshare);
+        messages.array().forEach(function(m) {
+            m.delete();
         });
+
+        let invite = await channels.welcome.createInvite({ "maxAge": 0 }, "Detected leak of original link");
+        await channels.linkshare.send(config.inviteMessage + invite.toString())
+        await channels.notify.send("Detected invite leak!! New link: " + invite.toString())
+    } catch (e) {
+        logger.error(e);
+    }
+}
+
+function loop() {
+    let currTime = Date.now();
+
+    usersOnProbation.forEach(function(m, i) {
+        let diff = currTime - m.joinTime;
+        if (diff >= config.newUserProbationTime) {
+            logger.log(`Removing probation from ${m.member.displayName}, join date older than ${config.newUserProbationTime}ms.`);
+            usersOnProbation.splice(i, 1); //remove user from array
+            removeProbation(m.member);
+            logger.log(`Users left in array: ${usersOnProbation.length}`)
+        }
+    });
+
+    setTimeout(loop, 2000);
+}
+
+function setProbation(member) {
+    if (!member) {
+        member = String.fromCharCode(rand(65, 122)); //rand char for testing
+    }
+
+    logger.log(`Setting probation for ${member.displayName || member}`);
+
+    usersOnProbation.push({ "member": member, "joinTime": Date.now() });
 }
 
 function resetCounter() {
     currentNewUsers = 0;
 }
 
-function detectedLeak() {
-    resetCounter()
-    Timeout.clear("newUserTimeout");
+//test code, only works on test server
+client.on('message', message => {
+    if (message.content == ".fakejoin" && message.channel.name == "test-invite-leaked") {
+        currentNewUsers++;
+        Timeout.clear("inviteLeakTimeout");
+        Timeout.set("inviteLeakTimeout", resetCounter, config.inviteLeakTime);
 
-    channels.welcome.fetchInvites()
-        .then(function(invites) {
-            invites.deleteAll();
+        if (currentNewUsers >= config.maxNewUsers) {
+            detectedLeak();
+        }
+    }
+});
 
-            channels.welcome.createInvite({ "maxAge": 0 }, "Detected leak of original link")
-                .then(function(invite) {
-                    channels.linkshare.fetchMessages(channels.linkshare)
-                        .then(messages => messages.array()[0].delete())
-                        .then(channels.linkshare.send(message + invite.toString()))
-                        .then(channels.notify.send("Detected invite leak!! New link: " + invite.toString()))
-                }).catch(console.error);
-        }).catch(console.error);
-}
-
+loop();
 client.login(auth.token);
