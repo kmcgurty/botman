@@ -119,9 +119,9 @@ function resetCounter() {
 
 
 client.on('message', async message => {
-    if (message.channel.name == "qr-bot-search" && message.content[3] != "!qre" && !message.member.user.bot) {
+    if (message.channel.name == "qr-bot-search" && !message.member.user.bot && message.content.substring(0, 4) != "!qre") {
         await message.delete()
-        await message.channel.send(`<@${message.author.id}> this channel is for commands only. If you are having trouble installing a code, please visit ${channels.techsupport}. If your code does not exist, you can request it in ${channels.qrrequests}.`)
+        message.channel.send(`<@${message.author.id}> this channel is for commands only. If you are having trouble installing a code, please visit ${channels.techsupport}. If your code does not exist, you can request it in ${channels.qrrequests}.`)
     }
 
     //test code, only works on test server
