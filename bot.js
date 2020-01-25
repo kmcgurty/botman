@@ -17,11 +17,15 @@ client.on('ready', () => {
     channels = {
         "welcome": client.channels.find(channel => channel.name === "welcome"),
         "notify": client.channels.find(channel => channel.name === "server-logs"),
-        "linkshare": client.channels.find(channel => channel.name === "invite-link")
+        "linkshare": client.channels.find(channel => channel.name === "invite-link"),
+        "qrrequests": client.channels.find(channel => channel.name === "qr-requests"),
+        "techsupport": client.channels.find(channel => channel.name === "tech-support")
     }
 });
 
 client.on('guildMemberAdd', member => {
+    console.log(member)
+
     logger.log(`Setting initial role for ${member.displayName}`)
 
     setProbation(member);
@@ -115,8 +119,14 @@ function resetCounter() {
     currentNewUsers = 0;
 }
 
-//test code, only works on test server
-client.on('message', message => {
+
+client.on('message', async message => {
+    if (message.channel.name == "qr-bot-search" && message.content[3] != "!qre" && !message.member.user.bot) {
+        await message.delete()
+        await message.channel.send(`<@${message.author.id}> this channel is for commands only. If you are having trouble installing a code, please visit ${channels.techsupport}. If your code does not exist, you can request it in ${channels.qrrequests}.`)
+    }
+
+    //test code, only works on test server
     if (message.content == ".fakejoin" && message.channel.name == "test-invite-leaked") {
         currentNewUsers++;
         Timeout.clear("inviteLeakTimeout");

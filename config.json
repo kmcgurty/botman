@@ -1,11 +1,11 @@
 {
     "roles":
     {
-        "first": "646165492788232213",
-        "second": "646165580210110487"
+        "first": "647281614681800718",
+        "second": "647281657354911767"
     },
-    "newUserProbationTime": 600000,
-    "maxNewUsers": 30,
-    "inviteLeakTime": 600000,
+    "newUserProbationTime": 10000,
+    "maxNewUsers": 2,
+    "inviteLeakTime": 10000,
     "inviteMessage": "Below is the link to the server, feel free to share it with your friends.\nDO NOT POST THIS PUBLICLY, ESPECIALLY ON REDDIT. SHARE ONLY THROUGH PRIVATE MESSAGES.\n\n"
 }
