@@ -1,5 +1,3 @@
-//todo: prevent messages inside #qr-bot-search
-
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const Timeout = require('smart-timeout');

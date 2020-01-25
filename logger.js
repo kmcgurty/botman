@@ -1,4 +1,4 @@
-const fs = require('fs'); //todo export to file
+const fs = require('fs');
 const dateFormat = require('dateformat');
 
 let logFile = "log.txt"
