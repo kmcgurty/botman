@@ -22,8 +22,6 @@ client.on('ready', () => {
 });
 
 client.on('guildMemberAdd', member => {
-    console.log(member)
-
     logger.log(`Setting initial role for ${member.displayName}`)
 
     setProbation(member);
