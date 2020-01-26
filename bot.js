@@ -21,7 +21,7 @@ client.on('ready', () => {
     }
 });
 
-client.on('guildMemberAdd', member => {
+client.on('guildMemberAdd', async member => {
     console.log(member)
 
     logger.log(`Setting initial role for ${member.displayName}`)
@@ -31,6 +31,9 @@ client.on('guildMemberAdd', member => {
     try {
         member.setRoles([config.roles.first])
         logger.log(`Successfully set the initial role for ${member.displayName}`)
+
+        let dm = await member.createDM()
+        await dm.send("Welcome to the QR's R US server! There is a 10 minute timeout period where you won't have access to the server. Ensure you read all of the #info channel, as it explains everything to you.")
     } catch (e) {
         logger.error(e);
     }
@@ -54,7 +57,7 @@ async function removeProbation(member) {
         logger.log(`Attempting to send DM to '${member.displayName}'...`);
 
         let dm = await member.createDM()
-        await dm.send("Congrats! You've been granted access to the rest of the qreeShop server. 😊 Enjoy your stay!")
+        await dm.send("Congratulations! You've been granted access to the rest of the server. 😊 Enjoy your stay!")
 
         logger.log("DM success!");
     } catch (e) {
@@ -119,9 +122,11 @@ function resetCounter() {
 
 
 client.on('message', async message => {
-    if (message.channel.name == "qr-bot-search" && !message.member.user.bot && message.content.substring(0, 4) != "!qre") {
-        await message.delete()
-        message.channel.send(`<@${message.author.id}> this channel is for commands only. If you are having trouble installing a code, please visit ${channels.techsupport}. If your code does not exist, you can request it in ${channels.qrrequests}.`)
+    if (message.channel.name == "qr-bot-search" && !message.member.user.bot) {
+        if (!message.content.match(/^!qre|^\d*$|^cancel$/g)) {
+            await message.delete()
+            message.channel.send(`<@${message.author.id}> this channel is for commands only. If you are having trouble installing a code, please visit ${channels.techsupport}. If your code does not exist, you can request it in ${channels.qrrequests}.`)
+        }
     }
 
     //test code, only works on test server
