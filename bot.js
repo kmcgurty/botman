@@ -7,6 +7,7 @@ const config = require('./config.json');
 
 let currentNewUsers = 0;
 let usersOnProbation = [];
+let newMessages = [];
 let channels = {}
 
 client.on('ready', () => {
@@ -22,8 +23,6 @@ client.on('ready', () => {
 });
 
 client.on('guildMemberAdd', async member => {
-    console.log(member)
-
     logger.log(`Setting initial role for ${member.displayName}`)
 
     setProbation(member);
@@ -103,6 +102,22 @@ function loop() {
         }
     });
 
+    currTime = Date.now();
+    newMessages.forEach(function(m, i) {
+        let diff = currTime - m.time;
+
+        if (diff >= config.newMessageDeleteTime) {
+            m.message.delete()
+                .catch(function(e) {
+                    if (e.message !== "Unknown Message") {
+                        logger.error(e);
+                    }
+                });
+
+            newMessages.splice(i, 1);
+        }
+    });
+
     setTimeout(loop, 2000);
 }
 
@@ -122,11 +137,14 @@ function resetCounter() {
 
 
 client.on('message', async message => {
-    if (message.channel.name == "qr-bot-search" && !message.member.user.bot) {
-        if (!message.content.match(/^!qre|^\d*$|^cancel$/g)) {
+    if (message.channel.name == "qr-bot-search") {
+        if (!message.content.match(/^!qre|^\d*$|^cancel$/g) && !message.member.user.bot) {
             await message.delete()
             message.channel.send(`<@${message.author.id}> this channel is for commands only. If you are having trouble installing a code, please visit ${channels.techsupport}. If your code does not exist, you can request it in ${channels.qrrequests}.`)
         }
+
+        //push messages to delete later
+        newMessages.push({ "message": message, "time": Date.now() });
     }
 
     //test code, only works on test server
