@@ -32,7 +32,7 @@ client.on('guildMemberAdd', async member => {
         logger.log(`Successfully set the initial role for ${member.displayName}`)
 
         let dm = await member.createDM()
-        await dm.send("Welcome to the QR's R US server! There is a 10 minute timeout period where you won't have access to the server. Ensure you read all of the #info channel, as it explains everything to you.")
+        await dm.send(config.dmJoinText)
     } catch (e) {
         logger.error(e);
     }
