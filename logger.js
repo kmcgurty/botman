@@ -14,7 +14,7 @@ function log(msg) {
 }
 
 function error(e) {
-    msg = `**********\nError at ${getTime()}\n\n${e}\n\n**********`
+    msg = `**********\nError at ${getTime()}\n\n${e}\n\nHere is the trace:\n${Error().stack}\n**********`
 
     fs.appendFile(logFile, msg + "\n", (err) => {
         if (err) throw err;
