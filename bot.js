@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
 const Timeout = require('smart-timeout');
+const convertTime = require('convert-time');
 const logger = require('./logger.js');
 const auth = require('./auth.json');
 const config = require('./config.json');
@@ -8,7 +9,8 @@ const config = require('./config.json');
 let currentNewUsers = 0;
 let usersOnProbation = [];
 let newMessages = [];
-let channels = {}
+let channels = {};
+let gameNight = { "message": null, "ping": null, "details": { "coordinator": null, "game": null, "console": null, "time": null, "date": null }, "users": [] };
 
 client.on('ready', () => {
     logger.log(`Logged in as ${client.user.tag}!`);
@@ -20,6 +22,8 @@ client.on('ready', () => {
         "qrrequests": client.channels.find(channel => channel.name === "qr-requests"),
         "techsupport": client.channels.find(channel => channel.name === "tech-support")
     }
+
+    //channels.notify.send("I had to reboot. Any scheduled game nights will have to be re-added. Also check for uses stuck in purgatory.")
 });
 
 client.on('guildMemberAdd', async member => {
@@ -118,6 +122,15 @@ function loop() {
         }
     });
 
+    currTime = Date.now();
+    if (gameNight.details.date !== null && currTime >= gameNight.details.date.getTime()) {
+        gameNight.users.forEach(async user => {
+            let dm = await user.createDM()
+            await dm.send(`It's time! <@${gameNight.details.coordinator}> should be ready to play ${gameNight.details.game} with you. Check the discord for any updates, or shoot them a message. Happy gaming!`)
+            clearGameNight();
+        });
+    }
+
     setTimeout(loop, 2000);
 }
 
@@ -135,6 +148,24 @@ function resetCounter() {
     currentNewUsers = 0;
 }
 
+client.on("messageReactionAdd", async (reaction, user) => {
+    if (user.bot) return;
+
+    let dm = await user.createDM()
+
+    if (gameNight.message !== null && reaction.message.id == gameNight.message.id) {
+
+
+        await dm.send(`Got it! I will remind you about ${gameNight.details.game} at ${convertTime(gameNight.details.time)} EST 🙂`)
+        gameNight.users.push(user);
+    } else if (gameNight.message == null) {
+        dm.send(`Sorry, that scheduled Game Night doesn't exist anymore. Turn on discord notifications so you'll know for next time!`)
+    }
+});
+
+function clearGameNight() {
+    gameNight = { "message": null, "ping": null, "details": { "coordinator": null, "game": null, "console": null, "time": null, "date": null }, "users": [] };
+}
 
 client.on('message', async message => {
     if (message.channel.name == "qr-bot-search") {
@@ -147,15 +178,71 @@ client.on('message', async message => {
         newMessages.push({ "message": message, "time": Date.now() });
     }
 
-    //test code, only works on test server
-    if (message.content == ".fakejoin" && message.channel.name == "test-invite-leaked") {
-        currentNewUsers++;
-        Timeout.clear("inviteLeakTimeout");
-        Timeout.set("inviteLeakTimeout", resetCounter, config.inviteLeakTime);
-
-        if (currentNewUsers >= config.maxNewUsers) {
-            detectedLeak();
+    //this really shouldn't be hardcoded, but I didn't want to refactor the entire bot for 1 command
+    if (message.content.substring(0, 10) == "!gamenight") {
+        if (gameNight.message) {
+            message.channel.send(`A Game Night already exists. Clearing old event and making a new one.`);
+            clearGameNight();
         }
+        if (message.member.roles.find(role => role.name === "Coordinator")) {
+            let arr = message.content.split(" ");
+            if (arr.length == 4 && arr[3].match(/^\d\d:\d\d$/)) {
+                gameNight.details.coordinator = message.member.user.id;
+                gameNight.details.game = arr[1];
+                gameNight.details.console = arr[2];
+                gameNight.details.time = arr[3];
+
+                gameNight.details.date = new Date(Date().toString().replace(/\d\d:\d\d:\d\d/, gameNight.details.time + ":00"));
+
+                if (gameNight.details.date.getTime() <= Date.now()) {
+                    message.channel.send(`Error: I can't set a reminder for a time that's already passed! Current EST time: ${Date()}`);
+                    clearGameNight();
+                    return;
+                } else if (gameNight.details.time.split(":")[0] > 24 || gameNight.details.time.split(":")[0] < 0) {
+                    message.channel.send(`Error: Invalid time. Time must be a number between 0 and 24.`);
+                    clearGameNight();
+                    return;
+                }
+
+                let embed = {
+                    "embed": {
+                        "title": "Game Night",
+                        "description": "\nWe are having a Game Night tonight! React with a 🎮 if you'd like to play!",
+                        "fields": [{
+                            "name": "**Game**",
+                            "value": `${gameNight.details.game}`,
+                            "inline": true
+                        }, {
+                            "name": "**Console**",
+                            "value": `${gameNight.details.console}`,
+                            "inline": true
+                        }, {
+                            "name": "**Coordinator**",
+                            "value": `<@${gameNight.details.coordinator}>`,
+                            "inline": true
+                        }, {
+                            "name": "**Time**",
+                            "value": `${convertTime(gameNight.details.time)} EST [Click to get your local time!](https://www.thetimezoneconverter.com/?t=${encodeURI(convertTime(gameNight.details.time)).replace(":", "%3A")}&tz=EST%20(Eastern%20Standard%20Time\)&)`
+                        }, {
+                            "name": "**Important**",
+                            "value": "Make sure you allow DMs from other users! I will send you a message at the scheduled time."
+                        }],
+                        "footer": {
+                            "text": "botman 🦇 - Use !cancelgamenight to cancel the event. "
+                        }
+                    }
+                }
+
+                gameNight.ping = message.channel.send("@here");
+                gameNight.message = await message.channel.send(embed);
+                gameNight.message.react("🎮");
+            } else {
+                message.channel.send(`Sorry, I didn't understand your command. Sytax: \`!gamenight <game> <console> <HH:MM>\`. Times are 24 hour format and in EST`)
+            }
+        }
+    } else if (message.content.substring(0, 7) == "!cancelgamenight") {
+        clearGameNight();
+        message.channel.send("I've cancelled the event.")
     }
 });
 
