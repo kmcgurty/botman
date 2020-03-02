@@ -237,7 +237,7 @@ client.on('message', async message => {
                 gameNight.message = await message.channel.send(embed);
                 gameNight.message.react("🎮");
             } else {
-                message.channel.send(`Sorry, I didn't understand your command. Sytax: \`!gamenight <game> <console> <HH:MM>\`. Times are 24 hour format and in EST`)
+                message.channel.send(`Sorry, I didn't understand your command. Syntax: \`!gamenight <game> <console> <HH:MM>\`. Times are 24 hour format and in EST`)
             }
         }
     } else if (message.content.substring(0, 7) == "!cancelgamenight") {
