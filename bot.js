@@ -222,7 +222,7 @@ client.on('message', async message => {
                             "inline": true
                         }, {
                             "name": "**Time**",
-                            "value": `${convertTime(gameNight.details.time)} EST [Click to get your local time!](https://www.thetimezoneconverter.com/?t=${encodeURI(convertTime(gameNight.details.time)).replace(":", "%3A")}&tz=EST%20(Eastern%20Standard%20Time\)&)`
+                            "value": `${convertTime(gameNight.details.time)} EST [Click to get your local time!](https://www.thetimezoneconverter.com/?t=${encodeURI(convertTime(gameNight.details.time)).replace(":", "%3A")}&tz=EST%20%28Eastern%20Standard%20Time%29&)`
                         }, {
                             "name": "**Important**",
                             "value": "Make sure you allow DMs from other users! I will send you a message at the scheduled time."
