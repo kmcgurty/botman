@@ -241,8 +241,10 @@ client.on('message', async message => {
             }
         }
     } else if (message.content.substring(0, 7) == "!cancelgamenight") {
-        clearGameNight();
-        message.channel.send("I've cancelled the event.")
+        if (message.member.roles.find(role => role.name === "Coordinator")) {
+            clearGameNight();
+            message.channel.send("I've cancelled the event.")
+        }
     }
 });
 
