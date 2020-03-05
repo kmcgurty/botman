@@ -154,11 +154,9 @@ client.on("messageReactionAdd", async (reaction, user) => {
     let dm = await user.createDM()
 
     if (gameNight.message !== null && reaction.message.id == gameNight.message.id) {
-
-
         await dm.send(`Got it! I will remind you about ${gameNight.details.game} at ${convertTime(gameNight.details.time)} EST 🙂`)
         gameNight.users.push(user);
-    } else if (gameNight.message == null) {
+    } else if (gameNight.message == null && reaction._emoji.name == "🎮" && reaction.message.channel.name == "game-and-movie-night") {
         dm.send(`Sorry, that scheduled Game Night doesn't exist anymore. Turn on discord notifications so you'll know for next time!`)
     }
 });
