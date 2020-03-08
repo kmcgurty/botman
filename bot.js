@@ -2,6 +2,7 @@ const Discord = require('discord.js');
 const client = new Discord.Client();
 const Timeout = require('smart-timeout');
 const convertTime = require('convert-time');
+const parseCommandInput = require('chat-arg-parser');
 const logger = require('./logger.js');
 const auth = require('./auth.json');
 const config = require('./config.json');
@@ -157,7 +158,8 @@ client.on("messageReactionAdd", async (reaction, user) => {
         await dm.send(`Got it! I will remind you about ${gameNight.details.game} at ${convertTime(gameNight.details.time)} EST 🙂`)
         gameNight.users.push(user);
     } else if (gameNight.message == null && reaction._emoji.name == "🎮" && reaction.message.channel.name == "game-and-movie-night") {
-        dm.send(`Sorry, that scheduled Game Night doesn't exist anymore. Turn on discord notifications so you'll know for next time!`)
+        //this doesn't behave how i want. i will fix it later
+        //dm.send(`Sorry, that scheduled Game Night doesn't exist anymore. Turn on discord notifications so you'll know for next time!`)
     }
 });
 
@@ -176,19 +178,22 @@ client.on('message', async message => {
         newMessages.push({ "message": message, "time": Date.now() });
     }
 
+
+    let command = parseCommandInput("!", message.content)
+
     //this really shouldn't be hardcoded, but I didn't want to refactor the entire bot for 1 command
-    if (message.content.substring(0, 10) == "!gamenight") {
+    if (command.cmd == "gamenight") {
         if (gameNight.message) {
             message.channel.send(`A Game Night already exists. Clearing old event and making a new one.`);
             clearGameNight();
         }
+
         if (message.member.roles.find(role => role.name === "Coordinator")) {
-            let arr = message.content.split(" ");
-            if (arr.length == 4 && arr[3].match(/^\d\d:\d\d$/)) {
+            if (command.args.length == 3 && command.args[2].match(/^\d\d:\d\d$/)) {
                 gameNight.details.coordinator = message.member.user.id;
-                gameNight.details.game = arr[1];
-                gameNight.details.console = arr[2];
-                gameNight.details.time = arr[3];
+                gameNight.details.game = command.args[0];
+                gameNight.details.console = command.args[1];
+                gameNight.details.time = command.args[2];
 
                 gameNight.details.date = new Date(Date().toString().replace(/\d\d:\d\d:\d\d/, gameNight.details.time + ":00"));
 
@@ -231,17 +236,22 @@ client.on('message', async message => {
                     }
                 }
 
-                gameNight.ping = message.channel.send("@here");
+                //gameNight.ping = message.channel.send("@here");
                 gameNight.message = await message.channel.send(embed);
                 gameNight.message.react("🎮");
             } else {
                 message.channel.send(`Sorry, I didn't understand your command. Syntax: \`!gamenight <game> <console> <HH:MM>\`. Times are 24 hour format and in EST`)
             }
+        } else {
+            message.channel.send("Sorry, you do not have permission for this command.");
         }
-    } else if (message.content.substring(0, 7) == "!cancelgamenight") {
+    } else if (command.cmd == "cancelgamenight") {
         if (message.member.roles.find(role => role.name === "Coordinator")) {
+            gameNight.message.delete();
             clearGameNight();
-            message.channel.send("I've cancelled the event.")
+            message.channel.send("I've cancelled the event.");
+        } else {
+            message.channel.send("Sorry, you do not have permission for this command.");
         }
     }
 });
