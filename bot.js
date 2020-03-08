@@ -210,13 +210,13 @@ client.on('message', async message => {
                 let embed = {
                     "embed": {
                         "title": "Game Night/Movie Night",
-                        "description": "\nWe are having an event tonight! React with a 🎮 if you'd like to play!",
+                        "description": "\nWe are having an event tonight! React with a 🎮 if you'd like to join!",
                         "fields": [{
-                            "name": "**Game**",
+                            "name": "**What**",
                             "value": `${gameNight.details.game}`,
                             "inline": true
                         }, {
-                            "name": "**Console**",
+                            "name": "**Where**",
                             "value": `${gameNight.details.console}`,
                             "inline": true
                         }, {
@@ -224,7 +224,7 @@ client.on('message', async message => {
                             "value": `<@${gameNight.details.coordinator}>`,
                             "inline": true
                         }, {
-                            "name": "**Time**",
+                            "name": "**When**",
                             "value": `${convertTime(gameNight.details.time)} EST [Click to get your local time!](https://www.thetimezoneconverter.com/?t=${encodeURI(convertTime(gameNight.details.time)).replace(":", "%3A")}&tz=EST%20%28Eastern%20Standard%20Time%29&)`
                         }, {
                             "name": "**Important**",
