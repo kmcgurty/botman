@@ -209,8 +209,8 @@ client.on('message', async message => {
 
                 let embed = {
                     "embed": {
-                        "title": "Game Night",
-                        "description": "\nWe are having a Game Night tonight! React with a 🎮 if you'd like to play!",
+                        "title": "Game Night/Movie Night",
+                        "description": "\nWe are having an event tonight! React with a 🎮 if you'd like to play!",
                         "fields": [{
                             "name": "**Game**",
                             "value": `${gameNight.details.game}`,
@@ -231,7 +231,7 @@ client.on('message', async message => {
                             "value": "Make sure you allow DMs from other users! I will send you a message at the scheduled time."
                         }],
                         "footer": {
-                            "text": "botman 🦇 - Use !cancelgamenight to cancel the event. "
+                            "text": "botman 🦇 - Use !cancelevent to cancel the event. "
                         }
                     }
                 }
@@ -245,7 +245,7 @@ client.on('message', async message => {
         } else {
             message.channel.send("Sorry, you do not have permission for this command.");
         }
-    } else if (command.cmd == "cancelgamenight") {
+    } else if (command.cmd == "cancelevent") {
         if (message.member.roles.find(role => role.name === "Coordinator")) {
             gameNight.message.delete();
             clearGameNight();
