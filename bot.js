@@ -13,6 +13,41 @@ let newMessages = [];
 let channels = {};
 let gameNight = { "message": null, "ping": null, "details": { "coordinator": null, "game": null, "console": null, "time": null, "date": null }, "users": [] };
 
+let embedTemplate = {
+    "embed": {
+        "title": "Game Night/Movie Night",
+        "description": "\nWe are having an event tonight! React with a 🎮 if you'd like to join!",
+        "fields": [{
+            "name": "**What**",
+            "value": `${gameNight.details.game}`,
+            "inline": true
+        }, {
+            "name": "**Where**",
+            "value": `${gameNight.details.console}`,
+            "inline": true
+        }, {
+            "name": "**Coordinator**",
+            "value": `<@${gameNight.details.coordinator}>`,
+            "inline": true
+        }, {
+            "name": "**When**",
+            "value": `${gameNight.details.time} EST\n [Click to get your local time!](https://www.thetimezoneconverter.com/?t=${gameNight.details.time}&tz=EDT%20%28Eastern%Daylight%20Time%29&)`,
+            "inline": true
+        }, {
+            "name": "**Attending**",
+            "value": `No one is planning\n on attending :(`,
+            "inline": true
+        }, {
+            "name": "**Important**",
+            "value": "Make sure you allow DMs from other users! I will send you a message at the scheduled time."
+        }],
+        "footer": {
+            "text": "botman 🦇 - Use !cancelevent to cancel the event. "
+        }
+    }
+}
+
+
 client.on('ready', () => {
     logger.log(`Logged in as ${client.user.tag}!`);
 
@@ -127,7 +162,7 @@ function loop() {
     if (gameNight.details.date !== null && currTime >= gameNight.details.date.getTime()) {
         gameNight.users.forEach(async user => {
             let dm = await user.createDM()
-            await dm.send(`It's time! <@${gameNight.details.coordinator}> should be ready to play ${gameNight.details.game} with you. Check the discord for any updates, or shoot them a message. Happy gaming!`)
+            await dm.send(`It's time! <@${gameNight.details.coordinator}> should be ready for ${gameNight.details.game}. Check the discord for any updates, or shoot them a message. Have fun!`)
             clearGameNight();
         });
     }
@@ -157,6 +192,15 @@ client.on("messageReactionAdd", async (reaction, user) => {
     if (gameNight.message !== null && reaction.message.id == gameNight.message.id) {
         await dm.send(`Got it! I will remind you about ${gameNight.details.game} at ${convertTime(gameNight.details.time)} EST 🙂`)
         gameNight.users.push(user);
+
+        let users = "";
+
+        gameNight.users.forEach((currUser) => {
+            users += `<@${currUser.id}>\n`
+        })
+
+        embedTemplate.embed.fields[4].value = users;
+        gameNight.message.edit(embedTemplate)
     } else if (gameNight.message == null && reaction._emoji.name == "🎮" && reaction.message.channel.name == "game-and-movie-night") {
         //this doesn't behave how i want. i will fix it later
         //dm.send(`Sorry, that scheduled Game Night doesn't exist anymore. Turn on discord notifications so you'll know for next time!`)
@@ -207,37 +251,13 @@ client.on('message', async message => {
                     return;
                 }
 
-                let embed = {
-                    "embed": {
-                        "title": "Game Night/Movie Night",
-                        "description": "\nWe are having an event tonight! React with a 🎮 if you'd like to join!",
-                        "fields": [{
-                            "name": "**What**",
-                            "value": `${gameNight.details.game}`,
-                            "inline": true
-                        }, {
-                            "name": "**Where**",
-                            "value": `${gameNight.details.console}`,
-                            "inline": true
-                        }, {
-                            "name": "**Coordinator**",
-                            "value": `<@${gameNight.details.coordinator}>`,
-                            "inline": true
-                        }, {
-                            "name": "**When**",
-                            "value": `${convertTime(gameNight.details.time)} EST [Click to get your local time!](https://www.thetimezoneconverter.com/?t=${encodeURI(convertTime(gameNight.details.time)).replace(":", "%3A")}&tz=EST%20%28Eastern%20Standard%20Time%29&)`
-                        }, {
-                            "name": "**Important**",
-                            "value": "Make sure you allow DMs from other users! I will send you a message at the scheduled time."
-                        }],
-                        "footer": {
-                            "text": "botman 🦇 - Use !cancelevent to cancel the event. "
-                        }
-                    }
-                }
+                embedTemplate.embed.fields[0].value = `${gameNight.details.game}`;
+                embedTemplate.embed.fields[1].value = `${gameNight.details.console}`;
+                embedTemplate.embed.fields[2].value = `<@${gameNight.details.coordinator}>`;
+                embedTemplate.embed.fields[3].value = `${convertTime(gameNight.details.time)} EST\n [Click to get your local time!](https://www.thetimezoneconverter.com/?t=${encodeURI(convertTime(gameNight.details.time)).replace(":", "%3A")}&tz=EDT%20%28Eastern%Daylight%20Time%29&)`;
 
                 //gameNight.ping = message.channel.send("@here");
-                gameNight.message = await message.channel.send(embed);
+                gameNight.message = await message.channel.send(embedTemplate);
                 gameNight.message.react("🎮");
             } else {
                 message.channel.send(`Sorry, I didn't understand your command. Syntax: \`!gamenight <game> <console> <HH:MM>\`. Times are 24 hour format and in EST`)
