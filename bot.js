@@ -209,6 +209,7 @@ client.on("messageReactionAdd", async (reaction, user) => {
 
 function clearGameNight() {
     gameNight = { "message": null, "ping": null, "details": { "coordinator": null, "game": null, "console": null, "time": null, "date": null }, "users": [] };
+    embedTemplate.embed.fields[4].value = "No one is currently attending :("
 }
 
 client.on('message', async message => {
@@ -254,7 +255,7 @@ client.on('message', async message => {
                 embedTemplate.embed.fields[0].value = `${gameNight.details.game}`;
                 embedTemplate.embed.fields[1].value = `${gameNight.details.console}`;
                 embedTemplate.embed.fields[2].value = `<@${gameNight.details.coordinator}>`;
-                embedTemplate.embed.fields[3].value = `${convertTime(gameNight.details.time)} EST\n [Click to get your local time!](https://www.thetimezoneconverter.com/?t=${encodeURI(convertTime(gameNight.details.time)).replace(":", "%3A")}&tz=EDT%20%28Eastern%Daylight%20Time%29&)`;
+                embedTemplate.embed.fields[3].value = `${convertTime(gameNight.details.time)} EST [Click to get your local time!](https://www.thetimezoneconverter.com/?t=${encodeURI(convertTime(gameNight.details.time)).replace(":", "%3A")}&tz=Eastern%20Daylight%20Time%20%28EDT%29&)`;
 
                 //gameNight.ping = message.channel.send("@here");
                 gameNight.message = await message.channel.send(embedTemplate);
