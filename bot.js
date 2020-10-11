@@ -274,8 +274,61 @@ client.on('message', async message => {
         } else {
             message.channel.send("Sorry, you do not have permission for this command.");
         }
+    } else if (command.cmd == "countmsg"){
+        if (message.member.roles.find(role => role.name === "Mod")) {
+            if(command.args.length == 0) {
+                message.channel.send("Error: missing channel ID.");
+                return;
+            }
+
+            let userCount = {};
+
+            let channel = client.channels.find(channel => channel.id === command.args[0]);
+            let messages = await lots_of_messages_getter(channel, 1000);
+
+            for(let i = 0; i < messages.length; i++){
+                let author = messages[i].author.id;
+                if(!userCount[author]){
+                    userCount[author] = 1;
+                } else {
+                    userCount[author]++;
+                }
+            }
+            
+            for (let i = 0; i < Object.entries(userCount).length; i++){
+                let id = Object.entries(userCount)[i][0];
+                let user = await client.fetchUser(id);
+                let count = Object.entries(userCount)[i][1];
+
+                message.channel.send(`User "${user.username}" sent ${count} messages.`);
+            }
+        } else {
+            message.channel.send("Sorry, you do not have permission for this command.");
+        }
     }
 });
+
+async function lots_of_messages_getter(channel, limit = 1000) {
+    const sum_messages = [];
+    let last_id;
+
+    while (true) {
+        const options = { limit: 100 };
+        if (last_id) {
+            options.before = last_id;
+        }
+
+        const messages = await channel.fetchMessages(options);
+        sum_messages.push(...messages.array());
+        last_id = messages.last().id;
+
+        if (messages.size != 100 || sum_messages >= limit) {
+            break;
+        }
+    }
+
+    return sum_messages;
+}
 
 loop();
 client.login(auth.token);
